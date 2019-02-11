@@ -11,6 +11,10 @@ AProceduralMap::AProceduralMap()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
+	// Root
+	Root = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
+	SetRootComponent(Root);
+
 	// Init the meshes 
 	FloorMeshInstances = CreateAbstractDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FloorMeshInstances"));
 	FloorMeshInstances->SetupAttachment(GetRootComponent());
@@ -20,11 +24,6 @@ AProceduralMap::AProceduralMap()
 
 	PillarMeshInstances = CreateAbstractDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("PillarMeshInstances"));
 	PillarMeshInstances->SetupAttachment(GetRootComponent());
-
-	// init the meshes offset
-	FloorOffset = FVector(-200, -200, 0);
-	WallOffset = FVector(-200, 0, 0);
-	PillarOffset = FVector(0, 0, 0);
 
 	// Init some values
 	MaxX = 5;
@@ -78,23 +77,8 @@ void AProceduralMap::OnConstruction(const FTransform &Transform)
 	WallMeshInstances->ClearInstances();
 	PillarMeshInstances->ClearInstances();
 
-	// Check for the meshes
-	if (!FloorMesh || !WallMesh || !PillarMesh) {
-		return;
-	}
-
-	// Assign the meshes
-	FloorMeshInstances->SetStaticMesh(FloorMesh);
-	WallMeshInstances->SetStaticMesh(WallMesh);
-	PillarMeshInstances->SetStaticMesh(PillarMesh);
-
 	// Randomly generate our map
 	GenerateMap();
-
-	// Compute some offsets
-	FVector HWallOffset;
-	HWallOffset.X = WallOffset.Y;
-	HWallOffset.Y = WallOffset.X;
 
 	// Now we start the real construction
 	for (int i = 0; i < 2 * MaxX + 1; i++)
@@ -106,19 +90,19 @@ void AProceduralMap::OnConstruction(const FTransform &Transform)
 			switch (MapData[i * (2 * MaxY + 1) + j])
 			{
 			case EMapTileEnum::EFloor :
-				FloorMeshInstances->AddInstance(FTransform(FVector(tileX*TileSize, tileY*TileSize, 0) + FloorOffset));
+				FloorMeshInstances->AddInstance(FTransform(FVector(tileX*TileSize, tileY*TileSize, 0)));
 				break;
 
 			case EMapTileEnum::EHorizontalWall:
-				WallMeshInstances->AddInstance(FTransform(FQuat(FVector::UpVector, UKismetMathLibrary::GetPI() / 2), FVector(tileX*TileSize, tileY*TileSize, 0) + HWallOffset));
+				WallMeshInstances->AddInstance(FTransform(FQuat(FVector::UpVector, UKismetMathLibrary::GetPI() / 2), FVector(tileX*TileSize, tileY*TileSize, 0)));
 				break;
 
 			case EMapTileEnum::EVerticalWall:
-				WallMeshInstances->AddInstance(FTransform(FVector(tileX*TileSize, tileY*TileSize, 0) + WallOffset));
+				WallMeshInstances->AddInstance(FTransform(FVector(tileX*TileSize, tileY*TileSize, 0)));
 				break;
 
 			case EMapTileEnum::EPillar:
-				PillarMeshInstances->AddInstance(FTransform(FVector(tileX*TileSize, tileY*TileSize, 0) + PillarOffset));
+				PillarMeshInstances->AddInstance(FTransform(FVector(tileX*TileSize, tileY*TileSize, 0)));
 				break;
 
 			default:
@@ -130,7 +114,7 @@ void AProceduralMap::OnConstruction(const FTransform &Transform)
 
 void AProceduralMap::MakeRandomMaze()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Begin maze generation"));
+	UE_LOG(LogTemp, VeryVerbose, TEXT("Begin maze generation"));
 	TArray<TArray<int>> tileValues;
 
 	// init the tile values
@@ -198,27 +182,27 @@ void AProceduralMap::MakeRandomMaze()
 		}
 	} while (!AllValuesNull(tileValues));
 
-	UE_LOG(LogTemp, Warning, TEXT("End of maze generation"));
+	UE_LOG(LogTemp, VeryVerbose, TEXT("End of maze generation"));
 }
 
 
 // Returns true if all the values are null. False if not.
 bool AProceduralMap::AllValuesNull(TArray<TArray<int>> values)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AllValuesNull"));
+	UE_LOG(LogTemp, VeryVerbose, TEXT("AllValuesNull"));
 	for (int i = 0; i < values.Num(); i++)
 	{
 		for (int j = 0; j < values[i].Num(); j++)
 		{
 			if (values[i][j] != 0) 
 			{
-				UE_LOG(LogTemp, Warning, TEXT("found a non null value : %d at %d - %d."), values[i][j], i, j);
+				UE_LOG(LogTemp, VeryVerbose, TEXT("found a non null value : %d at %d - %d."), values[i][j], i, j);
 				return false;
 			}
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("All values are null"));
+	UE_LOG(LogTemp, VeryVerbose, TEXT("All values are null"));
 	return true;
 }
 
@@ -226,7 +210,7 @@ bool AProceduralMap::AllValuesNull(TArray<TArray<int>> values)
 // Returns the relative placement of the neigbhours with different values for a given point
 TArray<ETileWallEnum> AProceduralMap::GetDifferentNeighbours(TArray<TArray<int>> values, FVector2D point)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Begin GetDifferentNeighbours"));
+	UE_LOG(LogTemp, VeryVerbose, TEXT("Begin GetDifferentNeighbours"));
 	TArray<ETileWallEnum> points;
 
 	// check the tile to the north
@@ -253,14 +237,14 @@ TArray<ETileWallEnum> AProceduralMap::GetDifferentNeighbours(TArray<TArray<int>>
 		points.Push(ETileWallEnum::EWest);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("End GetDifferentNeighbours : found %d neighours"), points.Num());
+	UE_LOG(LogTemp, VeryVerbose, TEXT("End GetDifferentNeighbours : found %d neighours"), points.Num());
 	return points;
 }
 
 // TODO
 TArray<TArray<int>> AProceduralMap::ReplaceValues(TArray<TArray<int>> values, int oldValue, int newValue)
 {
-	UE_LOG(LogTemp, Warning, TEXT("ReplaceValues : %d to %d"), oldValue, newValue);
+	UE_LOG(LogTemp, VeryVerbose, TEXT("ReplaceValues : %d to %d"), oldValue, newValue);
 	for (int i = 0; i < values.Num(); i++)
 	{
 		for (int j = 0; j < values[i].Num(); j++)

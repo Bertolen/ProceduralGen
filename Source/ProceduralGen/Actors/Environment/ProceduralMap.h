@@ -56,31 +56,22 @@ protected:
 	TArray<EMapTileEnum> MapData;
 
 	// The meshes for our procedural generation
-	UInstancedStaticMeshComponent* FloorMeshInstances;
-	UInstancedStaticMeshComponent* WallMeshInstances;
-	UInstancedStaticMeshComponent* PillarMeshInstances;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map|Meshes", meta = (AllowPrivateAccess = "true"))
+		UInstancedStaticMeshComponent* FloorMeshInstances;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|Meshes")
-		UStaticMesh* FloorMesh;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map|Meshes", meta = (AllowPrivateAccess = "true"))
+		UInstancedStaticMeshComponent* WallMeshInstances;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|Meshes")
-		FVector FloorOffset;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|Meshes")
-		UStaticMesh* WallMesh;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|Meshes")
-		FVector WallOffset;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|Meshes")
-		UStaticMesh* PillarMesh;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map|Meshes")
-		FVector PillarOffset;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map|Meshes", meta = (AllowPrivateAccess = "true"))
+		UInstancedStaticMeshComponent* PillarMeshInstances;
 
 private :
 
 	void MakeRandomMaze();
+
+	// The root component. It's only here for that, so a basic scene component is enough
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map", meta = (AllowPrivateAccess = "true"))
+		class USceneComponent* Root;
 
 	// Returns true if all the values are null. False if not.
 	bool AllValuesNull(TArray<TArray<int>> values);
