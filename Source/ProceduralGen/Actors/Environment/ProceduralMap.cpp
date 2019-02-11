@@ -34,34 +34,40 @@ AProceduralMap::AProceduralMap()
 void AProceduralMap::GenerateMap()
 {
 	//cleanup the data first
+	for (int i = 0; i < MapData.Num(); i++)
+	{
+		MapData[i].Empty();
+	}
 	MapData.Empty();
 
 	//map generation one tile at a time
-	for (int i = 0; i < (2 * MaxX + 1) * (2 * MaxY + 1); i++)
+	for (int i = 0; i < (2 * MaxX + 1) ; i++)
 	{
-		int mapI = i / (2 * MaxY + 1);
-		int mapJ = i % (2 * MaxY + 1);
+		MapData.Push(TArray<EMapTileEnum>());
 
-		if (mapI % 2) {
-			if (mapJ % 2) {
-				// floor
-				MapData.Push(EMapTileEnum::EFloor);
+		for (int j = 0; j < (2 * MaxY + 1); j++)
+		{
+			if (i % 2) {
+				if (j % 2) {
+					// floor
+					MapData[i].Push(EMapTileEnum::EFloor);
+				}
+				else {
+					//vertical wall
+					MapData[i].Push(EMapTileEnum::EVerticalWall);
+				}
 			}
 			else {
-				//vertical wall
-				MapData.Push(EMapTileEnum::EVerticalWall);
+				if (j % 2) {
+					//horizontal wall
+					MapData[i].Push(EMapTileEnum::EHorizontalWall);
+				}
+				else {
+					// pillar
+					MapData[i].Push(EMapTileEnum::EPillar);
+				}
 			}
-		}
-		else {
-			if (mapJ % 2) {
-				//horizontal wall
-				MapData.Push(EMapTileEnum::EHorizontalWall);
-			}
-			else {
-				// pillar
-				MapData.Push(EMapTileEnum::EPillar);
-			}
-		}
+		}		
 	}
 
 	// Make random maze
@@ -87,7 +93,7 @@ void AProceduralMap::OnConstruction(const FTransform &Transform)
 		for (int j = 0; j < 2 * MaxY + 1; j++)
 		{
 			int tileY = j / 2;
-			switch (MapData[i * (2 * MaxY + 1) + j])
+			switch (MapData[i][j])
 			{
 			case EMapTileEnum::EFloor :
 				FloorMeshInstances->AddInstance(FTransform(FVector(tileX*TileSize, tileY*TileSize, 0)));
@@ -152,22 +158,22 @@ void AProceduralMap::MakeRandomMaze()
 			{
 			case ETileWallEnum::ENorth:
 				bValue = tileValues[pointA.X - 1][pointA.Y];
-				MapData[(mapDataX - 1) * mapDataColsAmt + mapDataY] = EMapTileEnum::EEmpty;
+				MapData[mapDataX - 1][mapDataY] = EMapTileEnum::EEmpty;
 				break;
 
 			case ETileWallEnum::ESouth:
 				bValue = tileValues[pointA.X + 1][pointA.Y];
-				MapData[(mapDataX + 1) * mapDataColsAmt + mapDataY] = EMapTileEnum::EEmpty;
+				MapData[mapDataX + 1][mapDataY] = EMapTileEnum::EEmpty;
 				break;
 
 			case ETileWallEnum::EEast:
 				bValue = tileValues[pointA.X][pointA.Y + 1];
-				MapData[mapDataX * mapDataColsAmt + mapDataY + 1] = EMapTileEnum::EEmpty;
+				MapData[mapDataX][mapDataY + 1] = EMapTileEnum::EEmpty;
 				break;
 
 			case ETileWallEnum::EWest:
 				bValue = tileValues[pointA.X][pointA.Y - 1];
-				MapData[mapDataX * mapDataColsAmt + mapDataY - 1] = EMapTileEnum::EEmpty;
+				MapData[mapDataX][mapDataY - 1] = EMapTileEnum::EEmpty;
 				break;
 
 			default:

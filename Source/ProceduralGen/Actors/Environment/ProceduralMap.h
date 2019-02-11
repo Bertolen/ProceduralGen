@@ -36,13 +36,13 @@ public:
 	// Sets default values for this actor's properties
 	AProceduralMap();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map", meta = (ClampMin = "3"))
 		int MaxX;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map", meta = (ClampMin = "3"))
 		int MaxY;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Map", meta = (ClampMin = "0"))
 		int TileSize;
 
 protected:
@@ -53,7 +53,7 @@ protected:
 	virtual void GenerateMap();
 
 	// 2D array to store the map data
-	TArray<EMapTileEnum> MapData;
+	TArray<TArray<EMapTileEnum>> MapData;
 
 	// The meshes for our procedural generation
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map|Meshes", meta = (AllowPrivateAccess = "true"))
