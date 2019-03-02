@@ -61,6 +61,15 @@ TArray<TArray<EMapTileEnum>> UMapGenerator::GenerateMap(int MaxX, int MaxY)
 void UMapGenerator::MakeRandomMaze(int MaxX, int MaxY)
 {
 	UE_LOG(LogTemp, VeryVerbose, TEXT("Begin maze generation"));
+
+	//Use Kruskal's akgorithm to make the maze
+	Prim(MaxX, MaxY);
+
+	UE_LOG(LogTemp, VeryVerbose, TEXT("End of maze generation"));
+}
+
+TArray<TArray<int>> UMapGenerator::InitTiles(int MaxX, int MaxY) {
+
 	TArray<TArray<int>> tileValues;
 
 	// init the tile values
@@ -73,62 +82,32 @@ void UMapGenerator::MakeRandomMaze(int MaxX, int MaxY)
 			tileValues[i].Push(i * MaxY + j);
 		}
 	}
+	
+	return tileValues;
+}
 
-	do
+void UMapGenerator::RemoveWall(FVector2D cell, ETileWallEnum wall) {
+	int mapDataX = 2 * cell.X + 1;
+	int mapDataY = 2 * cell.Y + 1;
+	switch (wall)
 	{
-		// declare a random point in our maze
-		FVector2D pointA(UKismetMathLibrary::RandomIntegerInRange(0, MaxX - 1), UKismetMathLibrary::RandomIntegerInRange(0, MaxY - 1));
-		int aValue = tileValues[pointA.X][pointA.Y];
+	case ETileWallEnum::ENorth:
+		MapData[mapDataX - 1][mapDataY] = EMapTileEnum::EEmpty;
+		break;
 
-		// find all the adjacing points with different values
-		TArray<ETileWallEnum> neighbours = GetDifferentNeighbours(tileValues, pointA);
+	case ETileWallEnum::ESouth:
+		MapData[mapDataX + 1][mapDataY] = EMapTileEnum::EEmpty;
+		break;
 
-		// if there is at least one
-		if (neighbours.Num())
-		{
-			// pick one at random
-			ETileWallEnum wall = neighbours[UKismetMathLibrary::RandomIntegerInRange(0, neighbours.Num() - 1)];
+	case ETileWallEnum::EEast:
+		MapData[mapDataX][mapDataY + 1] = EMapTileEnum::EEmpty;
+		break;
 
-			// TODO : remove the wall in between
-			int bValue;
-			int mapDataX = 2 * pointA.X + 1;
-			int mapDataY = 2 * pointA.Y + 1;
-			int mapDataColsAmt = 2 * MaxY + 1;
-			switch (wall)
-			{
-			case ETileWallEnum::ENorth:
-				bValue = tileValues[pointA.X - 1][pointA.Y];
-				MapData[mapDataX - 1][mapDataY] = EMapTileEnum::EEmpty;
-				break;
+	case ETileWallEnum::EWest:
+		MapData[mapDataX][mapDataY - 1] = EMapTileEnum::EEmpty;
+		break;
 
-			case ETileWallEnum::ESouth:
-				bValue = tileValues[pointA.X + 1][pointA.Y];
-				MapData[mapDataX + 1][mapDataY] = EMapTileEnum::EEmpty;
-				break;
-
-			case ETileWallEnum::EEast:
-				bValue = tileValues[pointA.X][pointA.Y + 1];
-				MapData[mapDataX][mapDataY + 1] = EMapTileEnum::EEmpty;
-				break;
-
-			case ETileWallEnum::EWest:
-				bValue = tileValues[pointA.X][pointA.Y - 1];
-				MapData[mapDataX][mapDataY - 1] = EMapTileEnum::EEmpty;
-				break;
-
-			default:
-				bValue = MaxX * MaxY + 1;
-				break;
-
-			}
-
-			// set all the tiles with the same values to the min value between the 2
-			tileValues = ReplaceValues(tileValues, FMath::Max(bValue, aValue), FMath::Min(bValue, aValue));
-
-		}
-	} while (!AllValuesNull(tileValues));
-
-	UE_LOG(LogTemp, VeryVerbose, TEXT("End of maze generation"));
+	}
 }
 
 // Returns the relative placement of the neigbhours with different values for a given point
@@ -200,4 +179,148 @@ bool UMapGenerator::AllValuesNull(TArray<TArray<int>> values)
 
 	UE_LOG(LogTemp, VeryVerbose, TEXT("All values are null"));
 	return true;
+}
+
+void UMapGenerator::Kruskal(int MaxX, int MaxY) {
+	
+	// init the tile values
+	TArray<TArray<int>> tileValues = InitTiles(MaxX, MaxY);
+
+	do
+	{
+		// declare a random point in our maze
+		FVector2D pointA(UKismetMathLibrary::RandomIntegerInRange(0, MaxX - 1), UKismetMathLibrary::RandomIntegerInRange(0, MaxY - 1));
+		int aValue = tileValues[pointA.X][pointA.Y];
+
+		// find all the adjacing points with different values
+		TArray<ETileWallEnum> neighbours = GetDifferentNeighbours(tileValues, pointA);
+
+		// if there is at least one
+		if (neighbours.Num())
+		{
+			// pick one at random
+			ETileWallEnum wall = neighbours[UKismetMathLibrary::RandomIntegerInRange(0, neighbours.Num() - 1)];
+
+			// remove the wall in between
+			RemoveWall(pointA, wall);
+
+
+			// set all the tiles with the same values to the min value between the 2
+			int bValue;
+			switch (wall)
+			{
+			case ETileWallEnum::ENorth:
+				bValue = tileValues[pointA.X - 1][pointA.Y];
+				break;
+
+			case ETileWallEnum::ESouth:
+				bValue = tileValues[pointA.X + 1][pointA.Y];
+				break;
+
+			case ETileWallEnum::EEast:
+				bValue = tileValues[pointA.X][pointA.Y + 1];
+				break;
+
+			case ETileWallEnum::EWest:
+				bValue = tileValues[pointA.X][pointA.Y - 1];
+				break;
+
+			default:
+				bValue = MaxX * MaxY + 1;
+				break;
+
+			}
+
+			tileValues = ReplaceValues(tileValues, FMath::Max(bValue, aValue), FMath::Min(bValue, aValue));
+
+		}
+	} while (!AllValuesNull(tileValues));
+}
+
+void UMapGenerator::Prim(int MaxX, int MaxY) {
+
+	//init the cells list
+	TArray<FVector2D> mazeCells;
+	TArray<FVector2D> adjacentCells;
+
+	// Pick a cell as part of the maze. Add the adjacent cells to the adjacent list
+	AddCellToMaze(FVector2D(0, 0), &mazeCells, &adjacentCells, MaxX, MaxY);
+
+	// While the adjacent list is not empty
+	while (adjacentCells.Num() > 0) {
+
+		// Pick a random cell in the adjacent list
+		FVector2D cell = adjacentCells[UKismetMathLibrary::RandomIntegerInRange(0, adjacentCells.Num() - 1)];
+
+		// Find all the walls dividing it from the maze.
+		TArray<ETileWallEnum> walls = GetDividingWalls(cell, mazeCells);
+
+		// Pick one wall at random and remove it
+		ETileWallEnum wall = walls[UKismetMathLibrary::RandomIntegerInRange(0, walls.Num() - 1)];
+		RemoveWall(cell, wall);
+
+		// Add that cell to the maze list and remove it from the adjacent cells list
+		AddCellToMaze(cell, &mazeCells, &adjacentCells, MaxX, MaxY);
+	}
+}
+
+void UMapGenerator::AddCellToMaze(FVector2D cell, TArray<FVector2D>* mazeCells, TArray<FVector2D>* adjacentCells, int MaxX, int MaxY) {
+
+	// remove the cell from the adjacent list
+	adjacentCells->Remove(cell);
+
+	// add it to the maze list
+	mazeCells->Push(cell);
+
+	// for each surrounding cell
+	for (int i = cell.X - 1; i < MaxX; i++) {
+		for (int j = cell.Y - 1; j < MaxY; j++) {
+
+			FVector2D adjacentCell = FVector2D(i, j);
+
+			// check if that cell actually exists
+			if (i > 0 && j > 0 && 1.0f == FVector2D::Distance(cell, adjacentCell)) {
+
+				// if it is in neither list
+				if (!adjacentCells->Contains(adjacentCell) && !mazeCells->Contains(adjacentCell)) {
+
+					// add it to the adjacent list
+					adjacentCells->Push(adjacentCell);
+				}
+			}
+		}
+	}
+
+}
+
+TArray<ETileWallEnum> UMapGenerator::GetDividingWalls(FVector2D adjacentcell, TArray<FVector2D> mazeCells) {
+
+	// init the array
+	TArray<ETileWallEnum> walls;
+
+	// check the tile to the north
+	if (mazeCells.Contains(FVector2D(adjacentcell.X - 1, adjacentcell.Y)))
+	{
+		walls.Push(ETileWallEnum::ENorth);
+	}
+
+	// check the tile to the south
+	if (mazeCells.Contains(FVector2D(adjacentcell.X + 1, adjacentcell.Y)))
+	{
+		walls.Push(ETileWallEnum::ESouth);
+	}
+
+	// check the tile to the east
+	if (mazeCells.Contains(FVector2D(adjacentcell.X, adjacentcell.Y + 1)))
+	{
+		walls.Push(ETileWallEnum::EEast);
+	}
+
+	// check the tile to the west
+	if (mazeCells.Contains(FVector2D(adjacentcell.X, adjacentcell.Y - 1)))
+	{
+		walls.Push(ETileWallEnum::EWest);
+	}
+
+	return walls;
 }

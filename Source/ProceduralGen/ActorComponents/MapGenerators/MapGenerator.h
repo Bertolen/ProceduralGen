@@ -48,6 +48,15 @@ public:
 private :
 	void MakeRandomMaze(int MaxX, int MaxY);
 
+	TArray<TArray<int>> InitTiles(int MaxX, int MaxY);
+
+	void RemoveWall(FVector2D cell, ETileWallEnum wall);
+
+	////////////////Algorithms///////////////////
+
+	/////////////////////////KRUSKAL
+	void Kruskal(int MaxX, int MaxY);
+
 	// Returns the relative placement of the neigbhours with different values for a given point
 	TArray<ETileWallEnum> GetDifferentNeighbours(TArray<TArray<int>> values, FVector2D point);
 
@@ -56,4 +65,11 @@ private :
 
 	// Returns true if all the values are null. False if not.
 	bool AllValuesNull(TArray<TArray<int>> values);
+
+	/////////////////////////PRIM
+	void Prim(int MaxX, int MaxY);
+
+	void AddCellToMaze(FVector2D cell, TArray<FVector2D>* mazeCells, TArray<FVector2D>* adjacentCells, int MaxX, int MaxY);
+
+	TArray<ETileWallEnum> GetDividingWalls(FVector2D cell, TArray<FVector2D> mazeCells);
 };
