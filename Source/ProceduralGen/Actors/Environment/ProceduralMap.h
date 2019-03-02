@@ -4,28 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "ProceduralGen/ActorComponents/MapGenerators/MapGenerator.h"
 #include "ProceduralMap.generated.h"
 
 class UInstancedStaticMeshComponent;
-
-UENUM(BlueprintType)
-enum class EMapTileEnum : uint8
-{
-	EEmpty,
-	EFloor,
-	EVerticalWall,
-	EHorizontalWall,
-	EPillar
-};
-
-UENUM(BlueprintType)
-enum class ETileWallEnum : uint8
-{
-	ENorth,
-	ESouth,
-	EEast,
-	EWest
-};
 
 UCLASS()
 class PROCEDURALGEN_API AProceduralMap : public AActor
@@ -50,10 +32,7 @@ protected:
 	virtual void OnConstruction(const FTransform &Transform) override;
 
 	// Randomly generate our map
-	virtual void GenerateMap();
-
-	// 2D array to store the map data
-	TArray<TArray<EMapTileEnum>> MapData;
+	TArray<TArray<EMapTileEnum>> GenerateMap();
 
 	// The meshes for our procedural generation
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map|Meshes", meta = (AllowPrivateAccess = "true"))
@@ -65,19 +44,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map|Meshes", meta = (AllowPrivateAccess = "true"))
 		UInstancedStaticMeshComponent* PillarMeshInstances;
 
-private :
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map|Generator", meta = (AllowPrivateAccess = "true"))
+		UMapGenerator* mapGen;
 
-	void MakeRandomMaze();
+private :
 
 	// The root component. It's only here for that, so a basic scene component is enough
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Map", meta = (AllowPrivateAccess = "true"))
 		class USceneComponent* Root;
-
-	// Returns true if all the values are null. False if not.
-	bool AllValuesNull(TArray<TArray<int>> values);
-
-	// Returns the relative placement of the neigbhours with different values for a given point
-	TArray<ETileWallEnum> GetDifferentNeighbours(TArray<TArray<int>> values, FVector2D point);
-
-	TArray<TArray<int>> ReplaceValues(TArray<TArray<int>> values, int oldValue, int newValue);
 };
